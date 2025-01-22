@@ -74,7 +74,11 @@ const AudioRecorder: React.FC = () => {
       const formData = new FormData();
       formData.append("audio", audioBlob, "recording.wav");
 
-      console.log("Sending audio to server...");
+      console.log("Sending audio to server...", {
+        blobSize: audioBlob.size,
+        blobType: audioBlob.type,
+      });
+
       const response = await fetch("http://localhost:3030/api/audio/transcribe", {
         method: "POST",
         body: formData,
@@ -85,7 +89,11 @@ const AudioRecorder: React.FC = () => {
       }
 
       const data = await response.json();
-      console.log("Transcription:", data.transcription);
+      console.log("Server response:", data);
+
+      if (data.fileDetails) {
+        console.log("File details:", data.fileDetails);
+      }
     } catch (err) {
       console.error("Error sending audio to server:", err);
       setError("Failed to process audio recording");
