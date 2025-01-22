@@ -4,9 +4,11 @@ import type React from "react";
 import { useState, useRef, useEffect } from "react";
 import { Button } from "../../components/ui/button";
 import { Card, CardContent } from "../../components/ui/card";
-import { Mic, Square, Play, Download } from "lucide-react";
+import { Mic, Square, Play, Download, Copy } from "lucide-react";
 
 const AudioRecorder: React.FC = () => {
+  const [isLoading, setIsLoading] = useState(false);
+  const [returnText, setReturnText] = useState<string | null>(null);
   const [isRecording, setIsRecording] = useState(false);
   const [audioURL, setAudioURL] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -69,7 +71,17 @@ const AudioRecorder: React.FC = () => {
     }
   };
 
+  const copyToClipboard = async (text: string) => {
+    try {
+      await navigator.clipboard.writeText(text);
+      console.log("Transcription copied to clipboard");
+    } catch (err) {
+      console.error("Failed to copy to clipboard:", err);
+    }
+  };
+
   const sendAudioToServer = async (audioBlob: Blob) => {
+    setIsLoading(true);
     try {
       const formData = new FormData();
       formData.append("audio", audioBlob, "recording.wav");
@@ -90,13 +102,16 @@ const AudioRecorder: React.FC = () => {
 
       const data = await response.json();
       console.log("Server response:", data);
-
+      setReturnText(data.transcription);
+      await copyToClipboard(data.transcription);
       if (data.fileDetails) {
         console.log("File details:", data.fileDetails);
       }
     } catch (err) {
       console.error("Error sending audio to server:", err);
       setError("Failed to process audio recording");
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -146,6 +161,21 @@ const AudioRecorder: React.FC = () => {
             {isRecording ? "Recording..." : "Ready to record"}
           </div>
           {error && <div className="text-red-500 text-sm mt-2">{error}</div>}
+          {isLoading ? (
+            <div className="text-gray-400 text-sm mt-2">Loading...</div>
+          ) : (
+            <div className="text-gray-400 text-sm mt-2 flex gap-2 items-center">
+              {returnText}
+              {returnText && (
+                <span
+                  className="cursor-pointer hover:text-gray-300"
+                  onClick={() => navigator.clipboard.writeText(returnText)}
+                >
+                  <Copy size={24} />
+                </span>
+              )}
+            </div>
+          )}
         </div>
       </CardContent>
     </Card>
